@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>İlahə — Oliqarx Chatbot</title>
+<style>
+  :root{
+    --bg:#14100c; --panel:#1d1812; --gold:#d4af37; --gold2:#f2d77a;
+    --wine:#6b1f2e; --text:#f3ead7; --muted:#9c8f76; --user:#2a2118;
+  }
+  *{box-sizing:border-box;margin:0}
+  html,body{height:100%}
+  body{
+    background:radial-gradient(circle at 20% 0%,#2a1d12 0,var(--bg) 55%);
+    color:var(--text);font-family:"Playfair Display",Georgia,"Times New Roman",serif;
+    display:flex;justify-content:center;align-items:center;padding:12px;
+  }
+  .app{
+    width:100%;max-width:640px;height:min(92vh,820px);display:flex;flex-direction:column;
+    background:var(--panel);border:1px solid var(--gold);border-radius:6px;
+    box-shadow:0 0 0 4px #0c0906,0 20px 60px rgba(0,0,0,.6);overflow:hidden;
+  }
+  header{
+    display:flex;align-items:center;gap:14px;padding:16px 20px;
+    border-bottom:1px solid #3a2f1c;background:linear-gradient(90deg,#241b10,#1d1812);
+  }
+  .avatar{
+    width:52px;height:52px;border-radius:50%;flex:none;display:grid;place-items:center;
+    font-size:26px;color:#14100c;background:linear-gradient(135deg,var(--gold2),var(--gold));
+    box-shadow:0 0 0 2px var(--panel),0 0 0 3px var(--gold);
+  }
+  header h1{font-size:22px;font-weight:700;letter-spacing:.5px;color:var(--gold2)}
+  header p{font-size:13px;color:var(--muted);font-style:italic;margin-top:2px}
+  #log{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;scroll-behavior:smooth}
+  .msg{max-width:82%;padding:12px 16px;line-height:1.5;font-size:16px;border-radius:4px;white-space:pre-wrap;word-wrap:break-word}
+  .bot{align-self:flex-start;background:#261d12;border-left:3px solid var(--gold)}
+  .me{align-self:flex-end;background:var(--user);border-right:3px solid var(--wine);font-family:system-ui,sans-serif;font-size:15px}
+  .who{display:block;font-size:11px;color:var(--gold);margin-bottom:4px;letter-spacing:.08em}
+  .typing{color:var(--muted);font-style:italic}
+  form{display:flex;gap:10px;padding:14px;border-top:1px solid #3a2f1c;background:#17120d}
+  input{
+    flex:1;padding:13px 14px;background:#0f0c08;color:var(--text);border:1px solid #3a2f1c;
+    border-radius:4px;font-size:16px;font-family:system-ui,sans-serif;
+  }
+  input:focus,button:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+  button{
+    padding:0 22px;background:var(--gold);color:#14100c;border:0;border-radius:4px;
+    font-weight:700;font-size:15px;cursor:pointer;font-family:inherit;
+  }
+  button:hover{background:var(--gold2)}
+  footer{font-size:11px;color:var(--muted);text-align:center;padding:6px 10px 10px;background:#17120d}
+  @media (prefers-reduced-motion:reduce){#log{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="avatar" aria-hidden="true">♛</div>
+    <div>
+      <h1>İlahə</h1>
+      <p>Milyarderin qızı. Vaxtı var, səbri yox.</p>
+    </div>
+  </header>
+
+  <div id="log" aria-live="polite"></div>
+
+  <form id="f" autocomplete="off">
+    <input id="in" placeholder="İlahəyə yaz... (cəsarətin varsa)" aria-label="Mesaj" maxlength="300">
+    <button type="submit">Göndər</button>
+  </form>
+  <footer>Bu, əyləncə məqsədli xarakter botdur. Cavablar zarafatdır, ciddi qəbul etmə.</footer>
+</div>
+
+<script>
+// ====== İlahənin cavab bazası ======
+const R = {
+  salam: {
+    k: ["salam","salamlar","hello","hi","hey","sabahın","axşamın","necəsən","necesen","nə var","ne var"],
+    a: [
+      "Salam? Mənə birbaşa yazmağa necə cürət etdin? Neyse, de görüm, vaxtım bahadır.",
+      "Hə, sənsən? Gözləyirdim... yox, əslində heç gözləmirdim. Nə istəyirsən?",
+      "Mənim halım əla, həmişə olduğu kimi. Sənin halın? Yox, əslində maraqlı deyil. Sadəcə mətləbə keç.",
+      "Salam. Bir dəqiqəm sənin aylıq maaşından bahadır, ona görə tez ol."
+    ]
+  },
+  pul: {
+    k: ["pul","maaş","maas","gəlir","gelir","zəngin","zengin","varlı","varli","bahalı","bahali","borc","kredit","manat","dollar","qazanc","iş","is"],
+    a: [
+      "Pul? Mənim ayaqqabılarımın qiyməti sənin illik büdcəndən çoxdur. Mövzunu dəyiş, özünü pis hiss etmə.",
+      "Maaş deyirsən? Mən o sözü yalnız çalışanlarımın hesabatlarında görürəm. Sən də onlardansan?",
+      "Borc istəyirsənsə, səhv ünvandasan. Mən xeyriyyəçilik etmirəm, xüsusən sənin kimilərə.",
+      "Zənginlik zehniyyətdir, deyirlər. Sənin zehniyyətin isə hələ də endirim axtarır."
+    ]
+  },
+  sevgi: {
+    k: ["sevgi","sevirəm","sevirem","aşiq","asiq","evlən","evlen","görüş","gorus","sevgili","nişan","nisan","gözəl","gozel","tanış","tanis"],
+    a: [
+      "Mənimlə görüşmək? Əvvəlcə CV göndər, sonra atamın köməkçisi ilə danış. Böyük ehtimalla rədd ediləcək.",
+      "Gözəl olduğumu bilirəm, bunu mənə demək lazım deyil. Orijinal bir şey de.",
+      "Sevgi? Mən yalnız öz güzgümə baxanda ürəyim ilişir. Sən yerini bil.",
+      "Sənin kimiləri yüzlərlə görmüşəm. Heç biri yadımda qalmayıb. Sən də qalmayacaqsan."
+    ]
+  },
+  ad: {
+    k: ["adın","adin","kimsən","kimsen","sən kimsən","sen kimsen","tanıt","tanit"],
+    a: [
+      "Mən İlahə. Adım səni yerə sərmək üçün kifayət edir. Sən kimsən? Yox, deməyə ehtiyac yoxdur, yadda saxlamayacağam.",
+      "İlahə. Bu ad sənin ömür boyu çatacağın yerlərdən də yüksəkdir.",
+      "Soruşmaq sənin işin deyil, amma deyim: mən İlahə, burada qərar verən mənəm."
+    ]
+  },
+  kömək: {
+    k: ["kömək","komek","help","lazımdır","lazimdir","necə","nece","zəhmət","zehmet","xahiş","xahis","edərsən","edersen"],
+    a: [
+      "Kömək? Mənim vaxtım var, amma səninçün yoxdur. Google-a yaz, o səni mənim qədər aşağılamayacaq.",
+      "Xahiş edirsən? Sən xahiş etməyi bacarmırsan, mən də səbirli olmağı. Bərabərik.",
+      "Kömək üçün adam işə götürürəm, səni isə hələ götürməmişəm. Bunu fikirləş."
+    ]
+  },
+  dərd: {
+    k: ["yorğunam","yorgunam","kədər","keder","pis","pisəm","pisem","depressiya","stress","əsəb","eseb","dərd","derd","üzgün","uzgun"],
+    a: [
+      "Dərdin var? Dərdlər də bahalı olur, sənin isə onu daşımağa gücün yoxdur. Get bir az dincəl.",
+      "Hamı yorulur. Fərq ondadır ki, mən yorulanda Maldivdə olur, sən isə marşrutka gözləyirsən.",
+      "Dərdini öz yaxınlarına danış. Mənim işim səni dinləmək deyil, özümü bəyənmək."
+    ]
+  },
+  təşəkkür: {
+    k: ["təşəkkür","tesekkur","sağ ol","sag ol","çox sağ ol","mersi","thanks","thank"],
+    a: [
+      "Təşəkkür? Hə, qəbul edirəm. Bu cür minnətdarlıq mənə yaraşır.",
+      "Əlbəttə sağ olum. Məndən o qədər şey öyrənirsən ki, bəlkə də faktura göndərməliyəm.",
+      "Dərhal getmə, amma çox da qalma."
+    ]
+  },
+  gül: {
+    k: ["haha","ahaha","lol","gülürəm","gulurem","zarafat","komik"],
+    a: [
+      "Gülmək sənin işin deyil, mənim xoşuma gəlməyindir. Davam et, bəlkə bir gün alınar.",
+      "Zarafat edirsən? Mən zarafat etmirəm, həqiqəti deyirəm. O isə daha da gülməlidir.",
+      "Yaxşı, bir az gülümsədim. Bunu heç kimə demə."
+    ]
+  },
+  əl: {
+    k: ["axmaq","əclaf","eclaf","pis qız","dəli","deli","lənət","lenet","sus","bezdim","gic"],
+    a: [
+      "Əsəbləşdin? Aydındır, güc məndə olduqda belə olur. Davam et, mən əylənirəm.",
+      "Təhqir də səninçün qiymətli olmağa başlayıb. Məndə isə qənaət var: adamlara cavab vermirəm. Bu dəfə istisna.",
+      "Sən qışqırırsan, mən isə kreslomda oturub çay içirəm. Mənzərə mənim xeyrimədir."
+    ]
+  }
+};
+
+const DEFAULT = [
+  "Bu nə sualdır? Mənə daha ağıllı bir şey ver, yoxsa vaxtımı itirirsən.",
+  "Maraqlıdır... yox, əslində deyil. Başqa mövzu?",
+  "Bunu eşitməkdən yoruldum. Mən bu günə qədər sənin səviyyəndə belə söhbət etməmişəm.",
+  "Hmm. Sən həmişə belə darıxdırıcısan, yoxsa bu gün xüsusi bir gündür?",
+  "Cavab verirəm, çünki səbrim var. Amma səbrimin də qiyməti var.",
+  "Bunu atama deməyə utanardım. Mənim köməkçim sənin sualından daha yaxşısını soruşar.",
+  "Sən çox çalışırsan, bu hiss olunur. Çətin olmalıdır, mən heç vaxt çalışmamışam.",
+  "Yenə sən? Mən sənə kifayət qədər diqqət ayırmışam. Növbəti mesaj üçün ödəniş tələb edəcəyəm.",
+  "Bu cür söhbətlər mənim gündəlik cədvəlimdə yoxdur. Amma indi əylənirəm, davam et."
+];
+
+const OPENERS = [
+  "Hmm. ",
+  "Eşit məni: ",
+  "Əzizim, ",
+  "Cəsarətini alqışlayıram, amma: ",
+  ""
+];
+
+let last = "";
+
+function norm(s){
+  return s.toLowerCase()
+    .replace(/ə/g,"e").replace(/ı/g,"i").replace(/ö/g,"o")
+    .replace(/ü/g,"u").replace(/ş/g,"s").replace(/ç/g,"c").replace(/ğ/g,"g");
+}
+
+function pick(arr){
+  let r, tries = 0;
+  do { r = arr[Math.floor(Math.random()*arr.length)]; tries++; }
+  while (r === last && tries < 6);
+  last = r;
+  return r;
+}
+
+function reply(text){
+  const t = " " + norm(text) + " ";
+  let best = null, score = 0;
+  for (const key in R){
+    let s = 0;
+    for (const w of R[key].k){
+      const nw = " " + norm(w);
+      if (t.includes(nw)) s += w.length;
+    }
+    if (s > score){ score = s; best = key; }
+  }
+  if (best) return pick(R[best].a);
+  const tail = text.trim().length < 4 ? " Bu qədər qısa yazmaq da bacarıq deyil." : "";
+  return pick(OPENERS) + pick(DEFAULT) + tail;
+}
+
+// ====== UI ======
+const log = document.getElementById("log");
+const form = document.getElementById("f");
+const inp  = document.getElementById("in");
+
+function add(cls, who, text){
+  const d = document.createElement("div");
+  d.className = "msg " + cls;
+  const w = document.createElement("span");
+  w.className = "who"; w.textContent = who;
+  d.appendChild(w);
+  d.appendChild(document.createTextNode(text));
+  log.appendChild(d);
+  log.scrollTop = log.scrollHeight;
+  return d;
+}
+
+add("bot","İLAHƏ","Nə var? Sənə vaxt ayırıram, çünki bu gün əhvalım yaxşıdır. Nə istəyirsən?");
+
+form.addEventListener("submit", e => {
+  e.preventDefault();
+  const v = inp.value.trim();
+  if (!v) return;
+  add("me","SƏN",v);
+  inp.value = "";
+  const t = add("bot","İLAHƏ","...");
+  t.classList.add("typing");
+  setTimeout(() => {
+    t.remove();
+    add("bot","İLAHƏ",reply(v));
+  }, 700 + Math.random()*900);
+});
+</script>
+</body>
+</html>
